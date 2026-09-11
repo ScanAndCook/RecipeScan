@@ -106,13 +106,14 @@
         }
     </style>
 </head>
+
 <body>
     <main class="container">
         <h1>RecipeScan KI-Test</h1>
 
         <p class="description">
-            Wähle ein Rezeptfoto aus. Das Bild wird an den separaten
-            Cloudflare-KI-Worker gesendet.
+            Wähle ein Rezeptfoto aus. Das Bild wird vor dem Upload
+            automatisch verkleinert und an den KI-Worker gesendet.
         </p>
 
         <input
@@ -122,7 +123,10 @@
             accept="image/*"
             capture="environment">
 
-        <img id="preview" class="preview" alt="Vorschau des Rezeptfotos">
+        <img
+            id="preview"
+            class="preview"
+            alt="Vorschau des Rezeptfotos">
 
         <button id="analyzeButton" class="button" disabled>
             Bild analysieren
@@ -136,6 +140,9 @@
     <script>
         const workerUrl =
             'https://recipe-scan-ai.scanandcook.workers.dev/analyze';
+
+        const maximumImageSize = 1280;
+        const jpegQuality = 0.75;
 
         const elements = {
             imageInput: document.getElementById('imageInput'),
@@ -176,16 +183,23 @@
 
             try {
                 elements.analyzeButton.disabled = true;
-                elements.status.textContent = 'Bild wird analysiert...';
+                elements.status.textContent =
+                    'Bild wird verkleinert und vorbereitet...';
                 elements.status.className = 'status';
                 elements.result.style.display = 'none';
+
+                const optimizedImage =
+                    await optimizeImage(selectedImage);
+
+                elements.status.textContent =
+                    `Bildgröße: ${formatBytes(optimizedImage.size)}. Analyse läuft...`;
 
                 const response = await fetch(workerUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': selectedImage.type
+                        'Content-Type': 'image/jpeg'
                     },
-                    body: selectedImage
+                    body: optimizedImage
                 });
 
                 const responseText = await response.text();
@@ -222,6 +236,81 @@
                 elements.analyzeButton.disabled = false;
             }
         });
+
+        async function optimizeImage(file) {
+            const imageUrl = URL.createObjectURL(file);
+
+            try {
+                const image = await loadImage(imageUrl);
+
+                const scale = Math.min(
+                    1,
+                    maximumImageSize / Math.max(image.width, image.height)
+                );
+
+                const width = Math.round(image.width * scale);
+                const height = Math.round(image.height * scale);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const context = canvas.getContext('2d', {
+                    alpha: false
+                });
+
+                context.drawImage(
+                    image,
+                    0,
+                    0,
+                    width,
+                    height
+                );
+
+                const optimizedBlob = await new Promise(resolve => {
+                    canvas.toBlob(
+                        resolve,
+                        'image/jpeg',
+                        jpegQuality
+                    );
+                });
+
+                if (!optimizedBlob) {
+                    throw new Error(
+                        'Das Bild konnte nicht komprimiert werden.'
+                    );
+                }
+
+                return optimizedBlob;
+            } finally {
+                URL.revokeObjectURL(imageUrl);
+            }
+        }
+
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+
+                image.onload = () => resolve(image);
+                image.onerror = () => reject(
+                    new Error('Das Bild konnte nicht geladen werden.')
+                );
+
+                image.src = url;
+            });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) {
+                return `${bytes} Bytes`;
+            }
+
+            if (bytes < 1024 * 1024) {
+                return `${(bytes / 1024).toFixed(1)} KB`;
+            }
+
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
     </script>
 </body>
 </html>
