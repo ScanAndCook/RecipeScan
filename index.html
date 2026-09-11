@@ -90,7 +90,6 @@
             width: 100%;
             height: auto;
             display: block;
-            transform: scaleX(-1);
         }
 
         canvas {
@@ -243,6 +242,7 @@
 <body>
     <div class="container">
         <h1>📸 Rezept → Bring</h1>
+
         <p class="subtitle">
             Fotografiere deine Zutaten und importiere sie direkt in Bring!
         </p>
@@ -347,8 +347,6 @@
             elements.canvas.width = elements.video.videoWidth;
             elements.canvas.height = elements.video.videoHeight;
 
-            // Das Bild wird unverändert auf das Canvas gezeichnet.
-            // Die Korrektur der Anzeige erfolgt ausschließlich über CSS.
             context.drawImage(elements.video, 0, 0);
 
             if (videoStream) {
