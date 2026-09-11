@@ -78,7 +78,6 @@
             width: 100%;
             height: auto;
             display: block;
-            transform: scaleX(-1);
         }
         canvas {
             width: 100%;
@@ -86,7 +85,6 @@
             margin-bottom: 15px;
             background: #000;
             display: none;
-            transform: scaleX(-1)
         }
         .ingredients-list {
             text-align: left;
@@ -282,17 +280,12 @@
             }
         });
 
-
         // Foto machen
-            elements.captureBtn.addEventListener('click', () => {
+        elements.captureBtn.addEventListener('click', () => {
             const context = elements.canvas.getContext('2d');
             elements.canvas.width = elements.video.videoWidth;
             elements.canvas.height = elements.video.videoHeight;
-    
-            // Spiegeln: Canvas drehen
-                context.scale(-1, 1);
-                context.drawImage(elements.video, -elements.canvas.width, 0);
-                context.scale(-1, 1);
+            context.drawImage(elements.video, 0, 0);
             
             // Video stoppen
             videoStream.getTracks().forEach(track => track.stop());
