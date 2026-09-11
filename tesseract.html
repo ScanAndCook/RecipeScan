@@ -3,338 +3,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RecipeScan KI-Test</title>
+    <title>Rezept → Bring</title>
+    <script async src="//platform.getbring.com/widgets/import.js"></script>
 
     <style>
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            font-family: Arial, sans-serif;
-            background: #f2f4f8;
-            color: #222;
         }
 
         .container {
-            max-width: 600px;
-            margin: 0 auto;
             background: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
         }
 
         h1 {
-            margin-top: 0;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .camera-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .camera-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .camera-button:active {
+            transform: translateY(0);
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .preview-section.active {
+            display: block;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 15px;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        canvas {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background: #000;
+            display: none;
+        }
+
+        .ingredients-list {
+            text-align: left;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ingredients-list h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .ingredient-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .ingredient-item input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #333;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .ingredient-item button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
             color: #333;
         }
 
-        .description {
-            color: #666;
-            line-height: 1.5;
+        .btn-secondary:hover {
+            background: #d0d0d0;
         }
 
-        .file-input {
-            display: block;
-            width: 100%;
-            margin: 20px 0;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .preview {
-            display: none;
-            width: 100%;
-            max-height: 400px;
-            object-fit: contain;
-            margin: 20px 0;
-            border-radius: 10px;
-            background: #000;
-        }
-
-        .button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 24px;
+        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
         }
 
-        .button:disabled {
-            opacity: 0.5;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
-        .status {
-            min-height: 24px;
-            margin-top: 20px;
-            color: #555;
-            white-space: pre-wrap;
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
         }
 
-        .result {
-            display: none;
-            width: 100%;
-            min-height: 240px;
-            margin-top: 20px;
-            padding: 14px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: #f8f8f8;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            overflow-x: auto;
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .error {
-            color: #b00020;
+            background: #ff6b6b;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
         }
 
-        .success {
-            color: #146c2e;
+        .error.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #555;
         }
     </style>
 </head>
 
 <body>
-    <main class="container">
-        <h1>RecipeScan KI-Test</h1>
+    <div class="container">
+        <h1>📸 Rezept → Bring</h1>
 
-        <p class="description">
-            Wähle ein Rezeptfoto aus. Das Bild wird stark komprimiert und
-            anschließend an den KI-Worker gesendet.
+        <p class="subtitle">
+            Fotografiere deine Zutaten und importiere sie direkt in Bring!
         </p>
 
-        <input
-            id="imageInput"
-            class="file-input"
-            type="file"
-            accept="image/*"
-            capture="environment">
+        <div class="info-box">
+            ℹ️ Fotografiere die Zutatenliste aus deinem Kochbuch. OCR liest die Zutaten aus.
+        </div>
 
-        <img
-            id="preview"
-            class="preview"
-            alt="Vorschau des Rezeptfotos">
+        <div class="error" id="errorMsg"></div>
 
-        <button id="analyzeButton" class="button" disabled>
-            Bild analysieren
+        <button class="camera-button" id="cameraBtn">
+            📷 Kamera starten
         </button>
 
-        <div id="status" class="status"></div>
+        <div class="preview-section" id="previewSection">
+            <div class="video-container">
+                <video id="video" playsinline autoplay></video>
+            </div>
 
-        <pre id="result" class="result"></pre>
-    </main>
+            <canvas id="canvas"></canvas>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="retakeBtn">
+                    Neues Foto
+                </button>
+
+                <button class="btn btn-primary" id="captureBtn">
+                    📷 Foto machen
+                </button>
+            </div>
+
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p>Analysiere Zutaten...</p>
+            </div>
+
+            <div class="ingredients-list" id="ingredientsList" style="display: none;">
+                <h3>📋 Erkannte Zutaten:</h3>
+
+                <div id="ingredientsContainer"></div>
+
+                <div class="button-group" style="margin-top: 15px;">
+                    <button class="btn btn-secondary" id="editBtn">
+                        Bearbeiten
+                    </button>
+
+                    <button class="btn btn-primary" id="sendBringBtn">
+                        ✓ Zu Bring senden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 
     <script>
-        const workerUrl =
-            'https://recipe-scan-ai.scanandcook.workers.dev/analyze';
+        const workerBaseUrl =
+            'https://recipe-scan-bring.scanandcook.workers.dev/';
 
-        const maximumImageSize = 640;
-        const maximumUploadSize = 300 * 1024;
+        const bringApiUrl =
+            'https://api.getbring.com/rest/bringrecipes/deeplink';
+
+        let videoStream = null;
+        let recognizedIngredients = [];
 
         const elements = {
-            imageInput: document.getElementById('imageInput'),
-            preview: document.getElementById('preview'),
-            analyzeButton: document.getElementById('analyzeButton'),
-            status: document.getElementById('status'),
-            result: document.getElementById('result')
+            cameraBtn: document.getElementById('cameraBtn'),
+            video: document.getElementById('video'),
+            canvas: document.getElementById('canvas'),
+            captureBtn: document.getElementById('captureBtn'),
+            retakeBtn: document.getElementById('retakeBtn'),
+            previewSection: document.getElementById('previewSection'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            ingredientsList: document.getElementById('ingredientsList'),
+            ingredientsContainer: document.getElementById('ingredientsContainer'),
+            sendBringBtn: document.getElementById('sendBringBtn'),
+            errorMsg: document.getElementById('errorMsg')
         };
 
-        let selectedImage = null;
-
-        elements.imageInput.addEventListener('change', event => {
-            const file = event.target.files[0];
-
-            if (!file) {
-                selectedImage = null;
-                elements.analyzeButton.disabled = true;
-                elements.preview.style.display = 'none';
-                return;
-            }
-
-            selectedImage = file;
-            elements.analyzeButton.disabled = false;
-            elements.status.textContent =
-                `Originalgröße: ${formatBytes(file.size)}`;
-            elements.status.className = 'status';
-            elements.result.style.display = 'none';
-            elements.result.textContent = '';
-
-            const imageUrl = URL.createObjectURL(file);
-            elements.preview.src = imageUrl;
-            elements.preview.style.display = 'block';
-        });
-
-        elements.analyzeButton.addEventListener('click', async () => {
-            if (!selectedImage) {
-                return;
-            }
-
+        elements.cameraBtn.addEventListener('click', async () => {
             try {
-                elements.analyzeButton.disabled = true;
-                elements.status.textContent =
-                    'Bild wird stark komprimiert...';
-                elements.status.className = 'status';
-                elements.result.style.display = 'none';
+                hideError();
 
-                const optimizedImage =
-                    await optimizeImage(selectedImage);
-
-                elements.status.textContent =
-                    `Uploadgröße: ${formatBytes(optimizedImage.size)}. ` +
-                    'Analyse läuft...';
-
-                const response = await fetch(workerUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'image/jpeg'
-                    },
-                    body: optimizedImage
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment'
+                    }
                 });
 
-                const responseText = await response.text();
-
-                let responseData;
-
-                try {
-                    responseData = JSON.parse(responseText);
-                } catch {
-                    responseData = {
-                        rawResponse: responseText
-                    };
-                }
-
-                if (!response.ok) {
-                    throw new Error(
-                        responseData.details ||
-                        responseData.error ||
-                        'Die Bildanalyse ist fehlgeschlagen.'
-                    );
-                }
-
-                elements.status.textContent =
-                    'Analyse erfolgreich abgeschlossen.';
-                elements.status.className = 'status success';
-
-                elements.result.textContent =
-                    JSON.stringify(responseData, null, 2);
-                elements.result.style.display = 'block';
+                elements.video.srcObject = videoStream;
+                elements.previewSection.classList.add('active');
+                elements.cameraBtn.style.display = 'none';
+                elements.video.style.display = 'block';
+                elements.canvas.style.display = 'none';
             } catch (error) {
-                elements.status.textContent = error.message;
-                elements.status.className = 'status error';
-            } finally {
-                elements.analyzeButton.disabled = false;
+                showError(
+                    'Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.'
+                );
+
+                console.error('Kamera-Fehler:', error);
             }
         });
 
-        async function optimizeImage(file) {
-            const imageUrl = URL.createObjectURL(file);
+        elements.captureBtn.addEventListener('click', () => {
+            const context = elements.canvas.getContext('2d');
 
+            elements.canvas.width = elements.video.videoWidth;
+            elements.canvas.height = elements.video.videoHeight;
+
+            context.drawImage(elements.video, 0, 0);
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+
+            elements.video.style.display = 'none';
+            elements.canvas.style.display = 'block';
+            document.querySelector('.button-group').style.display = 'none';
+            elements.loadingIndicator.classList.add('active');
+
+            recognizeText();
+        });
+
+        elements.retakeBtn.addEventListener('click', async () => {
             try {
-                const image = await loadImage(imageUrl);
+                elements.video.style.display = 'block';
+                elements.canvas.style.display = 'none';
+                document.querySelector('.button-group').style.display = 'flex';
+                elements.ingredientsList.style.display = 'none';
+                recognizedIngredients = [];
 
-                let width = image.width;
-                let height = image.height;
-
-                const scale = Math.min(
-                    1,
-                    maximumImageSize / Math.max(width, height)
-                );
-
-                width = Math.round(width * scale);
-                height = Math.round(height * scale);
-
-                for (let attempt = 0; attempt < 8; attempt++) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    const context = canvas.getContext('2d', {
-                        alpha: false
-                    });
-
-                    context.fillStyle = '#ffffff';
-                    context.fillRect(0, 0, width, height);
-                    context.drawImage(image, 0, 0, width, height);
-
-                    const quality = Math.max(
-                        0.25,
-                        0.55 - attempt * 0.05
-                    );
-
-                    const blob = await canvasToBlob(
-                        canvas,
-                        'image/jpeg',
-                        quality
-                    );
-
-                    if (blob.size <= maximumUploadSize) {
-                        return blob;
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment'
                     }
+                });
 
-                    width = Math.max(320, Math.round(width * 0.8));
-                    height = Math.max(320, Math.round(height * 0.8));
-                }
-
-                throw new Error(
-                    'Das Bild konnte nicht klein genug komprimiert werden.'
+                elements.video.srcObject = videoStream;
+            } catch (error) {
+                showError(
+                    'Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.'
                 );
-            } finally {
-                URL.revokeObjectURL(imageUrl);
+
+                console.error('Kamera-Fehler:', error);
+            }
+        });
+
+        async function recognizeText() {
+            try {
+                const imageData = elements.canvas.toDataURL('image/png');
+
+                const result = await Tesseract.recognize(
+                    imageData,
+                    'deu',
+                    {
+                        logger: message => console.log(message)
+                    }
+                );
+
+                parseIngredients(result.data.text);
+            } catch (error) {
+                showError('OCR-Fehler: Bitte versuche es erneut.');
+                console.error('OCR-Fehler:', error);
+                resetAfterError();
             }
         }
 
-        function loadImage(url) {
-            return new Promise((resolve, reject) => {
-                const image = new Image();
+        function parseIngredients(text) {
+            const lines = text
+                .split('\n')
+                .filter(line => line.trim().length > 0);
 
-                image.onload = () => resolve(image);
-                image.onerror = () => reject(
-                    new Error('Das Bild konnte nicht geladen werden.')
-                );
+            recognizedIngredients = lines.map(line => ({
+                original: line.trim(),
+                edited: line.trim()
+            }));
 
-                image.src = url;
+            elements.loadingIndicator.classList.remove('active');
+            displayIngredients();
+            elements.ingredientsList.style.display = 'block';
+        }
+
+        function displayIngredients() {
+            elements.ingredientsContainer.innerHTML = '';
+
+            recognizedIngredients.forEach((ingredient, index) => {
+                const div = document.createElement('div');
+                div.className = 'ingredient-item';
+
+                div.innerHTML = `
+                    <input
+                        type="text"
+                        value="${escapeHtml(ingredient.edited)}"
+                        data-index="${index}"
+                        class="ingredient-input">
+
+                    <button onclick="removeIngredient(${index})">
+                        Löschen
+                    </button>
+                `;
+
+                elements.ingredientsContainer.appendChild(div);
+            });
+
+            document.querySelectorAll('.ingredient-input').forEach(input => {
+                input.addEventListener('input', event => {
+                    const index = parseInt(event.target.dataset.index, 10);
+                    recognizedIngredients[index].edited = event.target.value;
+                });
             });
         }
 
-        function canvasToBlob(canvas, type, quality) {
-            return new Promise((resolve, reject) => {
-                canvas.toBlob(blob => {
-                    if (blob) {
-                        resolve(blob);
-                    } else {
-                        reject(
-                            new Error(
-                                'Das Bild konnte nicht komprimiert werden.'
-                            )
-                        );
-                    }
-                }, type, quality);
-            });
+        window.removeIngredient = index => {
+            recognizedIngredients.splice(index, 1);
+            displayIngredients();
+        };
+
+        elements.sendBringBtn.addEventListener('click', () => {
+            const ingredients = recognizedIngredients
+                .map(ingredient => ingredient.edited.trim())
+                .filter(ingredient => ingredient.length > 0);
+
+            if (ingredients.length === 0) {
+                showError('Es wurden keine Zutaten gefunden.');
+                return;
+            }
+
+            const recipeData = {
+                name: 'Gescanntes Rezept',
+                ingredients
+            };
+
+            const workerUrl = createWorkerRecipeUrl(recipeData);
+            const bringUrl = createBringUrl(workerUrl);
+
+            elements.sendBringBtn.disabled = true;
+            elements.loadingIndicator.classList.add('active');
+
+            window.location.href = bringUrl;
+        });
+
+        function createWorkerRecipeUrl(recipeData) {
+            const encodedData = encodeURIComponent(
+                JSON.stringify(recipeData)
+            );
+
+            return `${workerBaseUrl}?data=${encodedData}`;
         }
 
-        function formatBytes(bytes) {
-            if (bytes < 1024) {
-                return `${bytes} Bytes`;
-            }
+        function createBringUrl(recipeUrl) {
+            const encodedRecipeUrl = encodeURIComponent(recipeUrl);
 
-            if (bytes < 1024 * 1024) {
-                return `${(bytes / 1024).toFixed(1)} KB`;
-            }
+            return `${bringApiUrl}?url=${encodedRecipeUrl}&source=web`;
+        }
 
-            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        function escapeHtml(value) {
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showError(message) {
+            elements.errorMsg.textContent = message;
+            elements.errorMsg.classList.add('active');
+        }
+
+        function hideError() {
+            elements.errorMsg.classList.remove('active');
+        }
+
+        function resetAfterError() {
+            elements.loadingIndicator.classList.remove('active');
+            document.querySelector('.button-group').style.display = 'flex';
+            elements.video.style.display = 'block';
+            elements.canvas.style.display = 'none';
         }
     </script>
 </body>
