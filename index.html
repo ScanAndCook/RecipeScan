@@ -86,6 +86,7 @@
             width: 100%;
             height: auto;
             display: block;
+            transform: scaleX(-1);
         }
 
         canvas {
@@ -315,10 +316,6 @@
         const context = elements.canvas.getContext('2d');
         elements.canvas.width = elements.video.videoWidth;
         elements.canvas.height = elements.video.videoHeight;
-        
-        // Spiegeln beim Zeichnen
-        context.scale(-1, 1);
-        context.translate(-elements.canvas.width, 0);
         context.drawImage(elements.video, 0, 0);
         
         // Video stoppen
