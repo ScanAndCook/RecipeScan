@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezept → Bring – Tesseract + KI</title>
+    <title>Rezept → Bring</title>
+    <script async src="//platform.getbring.com/widgets/import.js"></script>
 
     <style>
         * {
@@ -53,7 +54,7 @@
             border-radius: 50px;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             font-weight: 600;
         }
 
@@ -95,39 +96,13 @@
             display: none;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 50px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
         .ingredients-list {
             text-align: left;
             background: #f5f5f5;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
-            max-height: 350px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -169,6 +144,37 @@
             font-size: 12px;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-light {
+            background: #333;
+            color: white;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -199,13 +205,6 @@
             }
         }
 
-        .status {
-            min-height: 24px;
-            margin: 12px 0;
-            color: #555;
-            font-size: 14px;
-        }
-
         .error {
             background: #ff6b6b;
             color: white;
@@ -228,6 +227,13 @@
             font-size: 13px;
             color: #555;
         }
+
+        .status {
+            min-height: 22px;
+            margin: 10px 0;
+            color: #555;
+            font-size: 14px;
+        }
     </style>
 </head>
 
@@ -236,11 +242,11 @@
         <h1>📸 Rezept → Bring</h1>
 
         <p class="subtitle">
-            Tesseract liest den Text. Die KI filtert daraus die Zutaten.
+            Fotografiere deine Zutaten und importiere sie direkt in Bring!
         </p>
 
         <div class="info-box">
-            Fotografiere möglichst nur den Rezeptbereich mit den Zutaten.
+            ℹ️ Fotografiere die Zutatenliste aus deinem Kochbuch. OCR liest die Zutaten aus.
         </div>
 
         <div class="error" id="errorMsg"></div>
@@ -265,6 +271,13 @@
                     📷 Foto machen
                 </button>
             </div>
+
+            <button
+                class="camera-button btn-light"
+                id="toggleTorchBtn"
+                style="display: none;">
+                💡 Licht an
+            </button>
 
             <div class="status" id="status"></div>
 
@@ -294,8 +307,8 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 
     <script>
-        const workerUrl =
-            'https://recipe-scan-ai.scanandcook.workers.dev/analyze-text';
+        const workerBaseUrl =
+            'https://recipe-scan-bring.scanandcook.workers.dev/';
 
         const bringApiUrl =
             'https://api.getbring.com/rest/bringrecipes/deeplink';
@@ -308,6 +321,7 @@
             retakeBtn: document.getElementById('retakeBtn'),
             newPhotoBtn: document.getElementById('newPhotoBtn'),
             cameraButtons: document.getElementById('cameraButtons'),
+            toggleTorchBtn: document.getElementById('toggleTorchBtn'),
             previewSection: document.getElementById('previewSection'),
             loadingIndicator: document.getElementById('loadingIndicator'),
             ingredientsList: document.getElementById('ingredientsList'),
@@ -318,12 +332,14 @@
         };
 
         let videoStream = null;
+        let torchEnabled = false;
         let recognizedIngredients = [];
 
         elements.cameraBtn.addEventListener('click', startCamera);
         elements.retakeBtn.addEventListener('click', startCamera);
         elements.newPhotoBtn.addEventListener('click', startCamera);
         elements.captureBtn.addEventListener('click', capturePhoto);
+        elements.toggleTorchBtn.addEventListener('click', toggleTorch);
         elements.sendBringBtn.addEventListener('click', sendToBring);
 
         async function startCamera() {
@@ -332,9 +348,7 @@
                 hideIngredients();
                 setStatus('');
 
-                if (videoStream) {
-                    videoStream.getTracks().forEach(track => track.stop());
-                }
+                stopCamera();
 
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: {
@@ -348,12 +362,98 @@
                 elements.video.style.display = 'block';
                 elements.canvas.style.display = 'none';
                 elements.cameraButtons.style.display = 'flex';
+
+                torchEnabled = false;
+                updateTorchButton();
             } catch (error) {
                 showError(
                     'Kamera konnte nicht gestartet werden. Bitte Berechtigung prüfen.'
                 );
 
                 console.error('Kamera-Fehler:', error);
+            }
+        }
+
+        function stopCamera() {
+            if (!videoStream) {
+                return;
+            }
+
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+            torchEnabled = false;
+        }
+
+        function getVideoTrack() {
+            if (!videoStream) {
+                return null;
+            }
+
+            return videoStream.getVideoTracks()[0] || null;
+        }
+
+        function updateTorchButton() {
+            const track = getVideoTrack();
+
+            if (!track || !track.getCapabilities) {
+                elements.toggleTorchBtn.style.display = 'none';
+                return;
+            }
+
+            const capabilities = track.getCapabilities();
+
+            if (!capabilities.torch) {
+                elements.toggleTorchBtn.style.display = 'none';
+                return;
+            }
+
+            elements.toggleTorchBtn.style.display = 'block';
+            elements.toggleTorchBtn.textContent =
+                torchEnabled ? '💡 Licht aus' : '💡 Licht an';
+        }
+
+        async function toggleTorch() {
+            const track = getVideoTrack();
+
+            if (!track || !track.getCapabilities) {
+                showError(
+                    'Die Kamerabeleuchtung wird von diesem Gerät nicht unterstützt.'
+                );
+
+                return;
+            }
+
+            const capabilities = track.getCapabilities();
+
+            if (!capabilities.torch) {
+                showError(
+                    'Die Kamerabeleuchtung wird von diesem Gerät nicht unterstützt.'
+                );
+
+                return;
+            }
+
+            try {
+                torchEnabled = !torchEnabled;
+
+                await track.applyConstraints({
+                    advanced: [
+                        {
+                            torch: torchEnabled
+                        }
+                    ]
+                });
+
+                updateTorchButton();
+            } catch (error) {
+                torchEnabled = false;
+                updateTorchButton();
+
+                showError(
+                    'Die Kamerabeleuchtung konnte nicht geändert werden.'
+                );
+
+                console.error('Torch-Fehler:', error);
             }
         }
 
@@ -376,15 +476,12 @@
                 elements.canvas.height
             );
 
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
+            stopCamera();
 
             elements.video.style.display = 'none';
             elements.canvas.style.display = 'block';
             elements.cameraButtons.style.display = 'none';
-            elements.ingredientsList.style.display = 'none';
+            elements.toggleTorchBtn.style.display = 'none';
             elements.loadingIndicator.classList.add('active');
             setStatus('Tesseract.js liest den Text...');
 
@@ -413,143 +510,28 @@
                     }
                 );
 
-                const ocrText = result.data.text.trim();
-
-                if (!ocrText) {
-                    throw new Error(
-                        'Tesseract.js konnte keinen Text erkennen.'
-                    );
-                }
-
-                setStatus('KI filtert und strukturiert die Zutaten...');
-                await analyzeTextWithAi(ocrText);
+                parseIngredients(result.data.text);
             } catch (error) {
-                showError(error.message || 'Die Analyse ist fehlgeschlagen.');
-                console.error('Analyse-Fehler:', error);
+                showError('OCR-Fehler: Bitte versuche es erneut.');
+                console.error('OCR-Fehler:', error);
                 resetAfterError();
             }
         }
 
-        async function analyzeTextWithAi(ocrText) {
-            const response = await fetch(workerUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: ocrText
-                })
-            });
+        function parseIngredients(text) {
+            const lines = text
+                .split('\n')
+                .filter(line => line.trim().length > 0);
 
-            const responseText = await response.text();
-
-            let responseData;
-
-            try {
-                responseData = JSON.parse(responseText);
-            } catch {
-                throw new Error(
-                    'Der Worker hat keine gültige JSON-Antwort geliefert.'
-                );
-            }
-
-            if (!response.ok) {
-                throw new Error(
-                    responseData.details ||
-                    responseData.error ||
-                    'Die KI-Textanalyse ist fehlgeschlagen.'
-                );
-            }
-
-            const aiText = extractAiText(responseData.result);
-            const parsedResult = parseJsonFromAiText(aiText);
-
-            if (
-                !parsedResult ||
-                !Array.isArray(parsedResult.ingredients)
-            ) {
-                throw new Error(
-                    'Die KI-Antwort enthält keine gültige Zutatenliste.'
-                );
-            }
-
-            recognizedIngredients = parsedResult.ingredients
-                .map(ingredient => ({
-                    original: ingredient.original || '',
-                    edited: formatIngredient(ingredient)
-                }))
-                .filter(ingredient => ingredient.edited.length > 0);
-
-            if (recognizedIngredients.length === 0) {
-                throw new Error(
-                    'Die KI konnte keine Zutaten erkennen.'
-                );
-            }
+            recognizedIngredients = lines.map(line => ({
+                original: line.trim(),
+                edited: line.trim()
+            }));
 
             elements.loadingIndicator.classList.remove('active');
-            setStatus('Analyse abgeschlossen.');
+            setStatus('Text wurde erkannt.');
             displayIngredients();
             elements.ingredientsList.style.display = 'block';
-        }
-
-        function extractAiText(result) {
-            if (!result) {
-                return '';
-            }
-
-            if (typeof result === 'string') {
-                return result;
-            }
-
-            if (typeof result.response === 'string') {
-                return result.response;
-            }
-
-            if (typeof result.description === 'string') {
-                return result.description;
-            }
-
-            return JSON.stringify(result);
-        }
-
-        function parseJsonFromAiText(text) {
-            const cleanedText = text
-                .replace(/```json/gi, '')
-                .replace(/```/g, '')
-                .trim();
-
-            try {
-                return JSON.parse(cleanedText);
-            } catch {
-                const startIndex = cleanedText.indexOf('{');
-                const endIndex = cleanedText.lastIndexOf('}');
-
-                if (startIndex === -1 || endIndex === -1) {
-                    return null;
-                }
-
-                try {
-                    return JSON.parse(
-                        cleanedText.substring(startIndex, endIndex + 1)
-                    );
-                } catch {
-                    return null;
-                }
-            }
-        }
-
-        function formatIngredient(ingredient) {
-            const name = String(ingredient.name || '').trim();
-            const amount = String(ingredient.amount || '').trim();
-            const unit = String(ingredient.unit || '').trim();
-
-            if (!name) {
-                return '';
-            }
-
-            return [amount, unit, name]
-                .filter(value => value.length > 0)
-                .join(' ');
         }
 
         function displayIngredients() {
@@ -563,7 +545,6 @@
                 input.type = 'text';
                 input.value = ingredient.edited;
                 input.dataset.index = index;
-                input.className = 'ingredient-input';
 
                 input.addEventListener('input', event => {
                     const currentIndex = parseInt(
@@ -605,11 +586,8 @@
                 ingredients
             };
 
-            const workerRecipeUrl =
-                createWorkerRecipeUrl(recipeData);
-
-            const bringUrl =
-                createBringUrl(workerRecipeUrl);
+            const recipeUrl = createWorkerRecipeUrl(recipeData);
+            const bringUrl = createBringUrl(recipeUrl);
 
             elements.sendBringBtn.disabled = true;
             elements.loadingIndicator.classList.add('active');
@@ -623,10 +601,7 @@
                 JSON.stringify(recipeData)
             );
 
-            const recipeWorkerUrl =
-                'https://recipe-scan-bring.scanandcook.workers.dev/';
-
-            return `${recipeWorkerUrl}?data=${encodedData}`;
+            return `${workerBaseUrl}?data=${encodedData}`;
         }
 
         function createBringUrl(recipeUrl) {
@@ -646,6 +621,7 @@
             elements.cameraButtons.style.display = 'flex';
             elements.video.style.display = 'block';
             elements.canvas.style.display = 'none';
+            updateTorchButton();
         }
 
         function setStatus(message) {
