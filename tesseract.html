@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezept → Bring</title>
-    <script async src="//platform.getbring.com/widgets/import.js"></script>
+    <title>Rezept → Bring – Tesseract + KI</title>
 
     <style>
         * {
@@ -53,19 +52,15 @@
             font-size: 16px;
             border-radius: 50px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
             width: 100%;
             margin-bottom: 20px;
             font-weight: 600;
         }
 
-        .camera-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .camera-button:active {
-            transform: translateY(0);
+        .camera-button:disabled,
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .preview-section {
@@ -100,13 +95,39 @@
             display: none;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
         .ingredients-list {
             text-align: left;
             background: #f5f5f5;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
-            max-height: 300px;
+            max-height: 350px;
             overflow-y: auto;
         }
 
@@ -123,69 +144,29 @@
             border-radius: 5px;
             border-left: 4px solid #667eea;
             display: flex;
-            justify-content: space-between;
+            gap: 8px;
             align-items: center;
             font-size: 14px;
         }
 
         .ingredient-item input {
             flex: 1;
-            border: none;
-            background: transparent;
+            min-width: 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px;
             color: #333;
             font-size: 14px;
-            margin-left: 10px;
         }
 
         .ingredient-item button {
             background: #ff6b6b;
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 7px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 50px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #d0d0d0;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
 
         .loading {
@@ -218,6 +199,13 @@
             }
         }
 
+        .status {
+            min-height: 24px;
+            margin: 12px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
         .error {
             background: #ff6b6b;
             color: white;
@@ -248,11 +236,11 @@
         <h1>📸 Rezept → Bring</h1>
 
         <p class="subtitle">
-            Fotografiere deine Zutaten und importiere sie direkt in Bring!
+            Tesseract liest den Text. Die KI filtert daraus die Zutaten.
         </p>
 
         <div class="info-box">
-            ℹ️ Fotografiere die Zutatenliste aus deinem Kochbuch. OCR liest die Zutaten aus.
+            Fotografiere möglichst nur den Rezeptbereich mit den Zutaten.
         </div>
 
         <div class="error" id="errorMsg"></div>
@@ -268,7 +256,7 @@
 
             <canvas id="canvas"></canvas>
 
-            <div class="button-group">
+            <div class="button-group" id="cameraButtons">
                 <button class="btn btn-secondary" id="retakeBtn">
                     Neues Foto
                 </button>
@@ -277,6 +265,8 @@
                     📷 Foto machen
                 </button>
             </div>
+
+            <div class="status" id="status"></div>
 
             <div class="loading" id="loadingIndicator">
                 <div class="spinner"></div>
@@ -288,9 +278,9 @@
 
                 <div id="ingredientsContainer"></div>
 
-                <div class="button-group" style="margin-top: 15px;">
-                    <button class="btn btn-secondary" id="editBtn">
-                        Bearbeiten
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="newPhotoBtn">
+                        Neues Foto
                     </button>
 
                     <button class="btn btn-primary" id="sendBringBtn">
@@ -304,14 +294,11 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 
     <script>
-        const workerBaseUrl =
-            'https://recipe-scan-bring.scanandcook.workers.dev/';
+        const workerUrl =
+            'https://recipe-scan-ai.scanandcook.workers.dev/analyze-text';
 
         const bringApiUrl =
             'https://api.getbring.com/rest/bringrecipes/deeplink';
-
-        let videoStream = null;
-        let recognizedIngredients = [];
 
         const elements = {
             cameraBtn: document.getElementById('cameraBtn'),
@@ -319,17 +306,35 @@
             canvas: document.getElementById('canvas'),
             captureBtn: document.getElementById('captureBtn'),
             retakeBtn: document.getElementById('retakeBtn'),
+            newPhotoBtn: document.getElementById('newPhotoBtn'),
+            cameraButtons: document.getElementById('cameraButtons'),
             previewSection: document.getElementById('previewSection'),
             loadingIndicator: document.getElementById('loadingIndicator'),
             ingredientsList: document.getElementById('ingredientsList'),
             ingredientsContainer: document.getElementById('ingredientsContainer'),
             sendBringBtn: document.getElementById('sendBringBtn'),
-            errorMsg: document.getElementById('errorMsg')
+            errorMsg: document.getElementById('errorMsg'),
+            status: document.getElementById('status')
         };
 
-        elements.cameraBtn.addEventListener('click', async () => {
+        let videoStream = null;
+        let recognizedIngredients = [];
+
+        elements.cameraBtn.addEventListener('click', startCamera);
+        elements.retakeBtn.addEventListener('click', startCamera);
+        elements.newPhotoBtn.addEventListener('click', startCamera);
+        elements.captureBtn.addEventListener('click', capturePhoto);
+        elements.sendBringBtn.addEventListener('click', sendToBring);
+
+        async function startCamera() {
             try {
                 hideError();
+                hideIngredients();
+                setStatus('');
+
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
 
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: {
@@ -342,58 +347,49 @@
                 elements.cameraBtn.style.display = 'none';
                 elements.video.style.display = 'block';
                 elements.canvas.style.display = 'none';
+                elements.cameraButtons.style.display = 'flex';
             } catch (error) {
                 showError(
-                    'Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.'
+                    'Kamera konnte nicht gestartet werden. Bitte Berechtigung prüfen.'
                 );
 
                 console.error('Kamera-Fehler:', error);
             }
-        });
+        }
 
-        elements.captureBtn.addEventListener('click', () => {
+        function capturePhoto() {
+            if (!elements.video.videoWidth || !elements.video.videoHeight) {
+                showError('Die Kamera ist noch nicht bereit.');
+                return;
+            }
+
             const context = elements.canvas.getContext('2d');
 
             elements.canvas.width = elements.video.videoWidth;
             elements.canvas.height = elements.video.videoHeight;
 
-            context.drawImage(elements.video, 0, 0);
+            context.drawImage(
+                elements.video,
+                0,
+                0,
+                elements.canvas.width,
+                elements.canvas.height
+            );
 
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
             }
 
             elements.video.style.display = 'none';
             elements.canvas.style.display = 'block';
-            document.querySelector('.button-group').style.display = 'none';
+            elements.cameraButtons.style.display = 'none';
+            elements.ingredientsList.style.display = 'none';
             elements.loadingIndicator.classList.add('active');
+            setStatus('Tesseract.js liest den Text...');
 
             recognizeText();
-        });
-
-        elements.retakeBtn.addEventListener('click', async () => {
-            try {
-                elements.video.style.display = 'block';
-                elements.canvas.style.display = 'none';
-                document.querySelector('.button-group').style.display = 'flex';
-                elements.ingredientsList.style.display = 'none';
-                recognizedIngredients = [];
-
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment'
-                    }
-                });
-
-                elements.video.srcObject = videoStream;
-            } catch (error) {
-                showError(
-                    'Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.'
-                );
-
-                console.error('Kamera-Fehler:', error);
-            }
-        });
+        }
 
         async function recognizeText() {
             try {
@@ -403,31 +399,157 @@
                     imageData,
                     'deu',
                     {
-                        logger: message => console.log(message)
+                        logger: message => {
+                            if (message.status === 'recognizing text') {
+                                const progress = Math.round(
+                                    (message.progress || 0) * 100
+                                );
+
+                                setStatus(
+                                    `Tesseract.js liest den Text... ${progress}%`
+                                );
+                            }
+                        }
                     }
                 );
 
-                parseIngredients(result.data.text);
+                const ocrText = result.data.text.trim();
+
+                if (!ocrText) {
+                    throw new Error(
+                        'Tesseract.js konnte keinen Text erkennen.'
+                    );
+                }
+
+                setStatus('KI filtert und strukturiert die Zutaten...');
+                await analyzeTextWithAi(ocrText);
             } catch (error) {
-                showError('OCR-Fehler: Bitte versuche es erneut.');
-                console.error('OCR-Fehler:', error);
+                showError(error.message || 'Die Analyse ist fehlgeschlagen.');
+                console.error('Analyse-Fehler:', error);
                 resetAfterError();
             }
         }
 
-        function parseIngredients(text) {
-            const lines = text
-                .split('\n')
-                .filter(line => line.trim().length > 0);
+        async function analyzeTextWithAi(ocrText) {
+            const response = await fetch(workerUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: ocrText
+                })
+            });
 
-            recognizedIngredients = lines.map(line => ({
-                original: line.trim(),
-                edited: line.trim()
-            }));
+            const responseText = await response.text();
+
+            let responseData;
+
+            try {
+                responseData = JSON.parse(responseText);
+            } catch {
+                throw new Error(
+                    'Der Worker hat keine gültige JSON-Antwort geliefert.'
+                );
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    responseData.details ||
+                    responseData.error ||
+                    'Die KI-Textanalyse ist fehlgeschlagen.'
+                );
+            }
+
+            const aiText = extractAiText(responseData.result);
+            const parsedResult = parseJsonFromAiText(aiText);
+
+            if (
+                !parsedResult ||
+                !Array.isArray(parsedResult.ingredients)
+            ) {
+                throw new Error(
+                    'Die KI-Antwort enthält keine gültige Zutatenliste.'
+                );
+            }
+
+            recognizedIngredients = parsedResult.ingredients
+                .map(ingredient => ({
+                    original: ingredient.original || '',
+                    edited: formatIngredient(ingredient)
+                }))
+                .filter(ingredient => ingredient.edited.length > 0);
+
+            if (recognizedIngredients.length === 0) {
+                throw new Error(
+                    'Die KI konnte keine Zutaten erkennen.'
+                );
+            }
 
             elements.loadingIndicator.classList.remove('active');
+            setStatus('Analyse abgeschlossen.');
             displayIngredients();
             elements.ingredientsList.style.display = 'block';
+        }
+
+        function extractAiText(result) {
+            if (!result) {
+                return '';
+            }
+
+            if (typeof result === 'string') {
+                return result;
+            }
+
+            if (typeof result.response === 'string') {
+                return result.response;
+            }
+
+            if (typeof result.description === 'string') {
+                return result.description;
+            }
+
+            return JSON.stringify(result);
+        }
+
+        function parseJsonFromAiText(text) {
+            const cleanedText = text
+                .replace(/```json/gi, '')
+                .replace(/```/g, '')
+                .trim();
+
+            try {
+                return JSON.parse(cleanedText);
+            } catch {
+                const startIndex = cleanedText.indexOf('{');
+                const endIndex = cleanedText.lastIndexOf('}');
+
+                if (startIndex === -1 || endIndex === -1) {
+                    return null;
+                }
+
+                try {
+                    return JSON.parse(
+                        cleanedText.substring(startIndex, endIndex + 1)
+                    );
+                } catch {
+                    return null;
+                }
+            }
+        }
+
+        function formatIngredient(ingredient) {
+            const name = String(ingredient.name || '').trim();
+            const amount = String(ingredient.amount || '').trim();
+            const unit = String(ingredient.unit || '').trim();
+
+            if (!name) {
+                return '';
+            }
+
+            return [amount, unit, name]
+                .filter(value => value.length > 0)
+                .join(' ');
         }
 
         function displayIngredients() {
@@ -437,35 +559,38 @@
                 const div = document.createElement('div');
                 div.className = 'ingredient-item';
 
-                div.innerHTML = `
-                    <input
-                        type="text"
-                        value="${escapeHtml(ingredient.edited)}"
-                        data-index="${index}"
-                        class="ingredient-input">
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = ingredient.edited;
+                input.dataset.index = index;
+                input.className = 'ingredient-input';
 
-                    <button onclick="removeIngredient(${index})">
-                        Löschen
-                    </button>
-                `;
-
-                elements.ingredientsContainer.appendChild(div);
-            });
-
-            document.querySelectorAll('.ingredient-input').forEach(input => {
                 input.addEventListener('input', event => {
-                    const index = parseInt(event.target.dataset.index, 10);
-                    recognizedIngredients[index].edited = event.target.value;
+                    const currentIndex = parseInt(
+                        event.target.dataset.index,
+                        10
+                    );
+
+                    recognizedIngredients[currentIndex].edited =
+                        event.target.value;
                 });
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.textContent = 'Löschen';
+
+                deleteButton.addEventListener('click', () => {
+                    recognizedIngredients.splice(index, 1);
+                    displayIngredients();
+                });
+
+                div.appendChild(input);
+                div.appendChild(deleteButton);
+                elements.ingredientsContainer.appendChild(div);
             });
         }
 
-        window.removeIngredient = index => {
-            recognizedIngredients.splice(index, 1);
-            displayIngredients();
-        };
-
-        elements.sendBringBtn.addEventListener('click', () => {
+        async function sendToBring() {
             const ingredients = recognizedIngredients
                 .map(ingredient => ingredient.edited.trim())
                 .filter(ingredient => ingredient.length > 0);
@@ -480,21 +605,28 @@
                 ingredients
             };
 
-            const workerUrl = createWorkerRecipeUrl(recipeData);
-            const bringUrl = createBringUrl(workerUrl);
+            const workerRecipeUrl =
+                createWorkerRecipeUrl(recipeData);
+
+            const bringUrl =
+                createBringUrl(workerRecipeUrl);
 
             elements.sendBringBtn.disabled = true;
             elements.loadingIndicator.classList.add('active');
+            setStatus('Bring wird geöffnet...');
 
             window.location.href = bringUrl;
-        });
+        }
 
         function createWorkerRecipeUrl(recipeData) {
             const encodedData = encodeURIComponent(
                 JSON.stringify(recipeData)
             );
 
-            return `${workerBaseUrl}?data=${encodedData}`;
+            const recipeWorkerUrl =
+                'https://recipe-scan-bring.scanandcook.workers.dev/';
+
+            return `${recipeWorkerUrl}?data=${encodedData}`;
         }
 
         function createBringUrl(recipeUrl) {
@@ -503,13 +635,21 @@
             return `${bringApiUrl}?url=${encodedRecipeUrl}&source=web`;
         }
 
-        function escapeHtml(value) {
-            return value
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+        function hideIngredients() {
+            elements.ingredientsList.style.display = 'none';
+            elements.ingredientsContainer.innerHTML = '';
+            recognizedIngredients = [];
+        }
+
+        function resetAfterError() {
+            elements.loadingIndicator.classList.remove('active');
+            elements.cameraButtons.style.display = 'flex';
+            elements.video.style.display = 'block';
+            elements.canvas.style.display = 'none';
+        }
+
+        function setStatus(message) {
+            elements.status.textContent = message;
         }
 
         function showError(message) {
@@ -518,14 +658,8 @@
         }
 
         function hideError() {
+            elements.errorMsg.textContent = '';
             elements.errorMsg.classList.remove('active');
-        }
-
-        function resetAfterError() {
-            elements.loadingIndicator.classList.remove('active');
-            document.querySelector('.button-group').style.display = 'flex';
-            elements.video.style.display = 'block';
-            elements.canvas.style.display = 'none';
         }
     </script>
 </body>
