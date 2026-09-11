@@ -282,12 +282,17 @@
             }
         });
 
+
         // Foto machen
-        elements.captureBtn.addEventListener('click', () => {
+            elements.captureBtn.addEventListener('click', () => {
             const context = elements.canvas.getContext('2d');
             elements.canvas.width = elements.video.videoWidth;
             elements.canvas.height = elements.video.videoHeight;
-            context.drawImage(elements.video, 0, 0);
+    
+            // Spiegeln: Canvas drehen
+                context.scale(-1, 1);
+                context.drawImage(elements.video, -elements.canvas.width, 0);
+                context.scale(-1, 1);
             
             // Video stoppen
             videoStream.getTracks().forEach(track => track.stop());
