@@ -98,7 +98,6 @@
             margin-bottom: 15px;
             background: #000;
             display: none;
-            transform: scaleX(-1);
         }
 
         .ingredients-list {
@@ -347,6 +346,7 @@
             elements.canvas.width = elements.video.videoWidth;
             elements.canvas.height = elements.video.videoHeight;
 
+            // Das Kamerabild unverändert übernehmen.
             context.drawImage(elements.video, 0, 0);
 
             if (videoStream) {
