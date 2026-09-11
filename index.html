@@ -66,11 +66,26 @@
         .preview-section.active {
             display: block;
         }
-        video, canvas {
+        .video-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 15px;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: scaleX(-1);
+        }
+        canvas {
             width: 100%;
             border-radius: 10px;
             margin-bottom: 15px;
             background: #000;
+            display: none;
         }
         .ingredients-list {
             text-align: left;
@@ -117,6 +132,7 @@
         .button-group {
             display: flex;
             gap: 10px;
+            margin-bottom: 15px;
         }
         .btn {
             flex: 1;
@@ -175,20 +191,6 @@
         .error.active {
             display: block;
         }
-        .bring-widget-container {
-            display: none;
-        }
-        .bring-widget-container.active {
-            display: block;
-        }
-        .bring-widget-container div {
-            display: block !important;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #667eea;
-            margin-top: 20px;
-        }
         .info-box {
             background: #f0f7ff;
             border-left: 4px solid #667eea;
@@ -214,12 +216,15 @@
         <button class="camera-button" id="cameraBtn">📷 Kamera starten</button>
 
         <div class="preview-section" id="previewSection">
-            <video id="video" playsinline></video>
-            <canvas id="canvas" style="display: none;"></canvas>
+            <div class="video-container">
+                <video id="video" playsinline autoplay></video>
+            </div>
+            
+            <canvas id="canvas"></canvas>
             
             <div class="button-group">
                 <button class="btn btn-secondary" id="retakeBtn">Neues Foto</button>
-                <button class="btn btn-primary" id="captureBtn">Foto machen</button>
+                <button class="btn btn-primary" id="captureBtn">📷 Foto machen</button>
             </div>
 
             <div class="loading" id="loadingIndicator">
@@ -235,15 +240,6 @@
                     <button class="btn btn-secondary" id="editBtn">Bearbeiten</button>
                     <button class="btn btn-primary" id="sendBringBtn">✓ Zu Bring senden</button>
                 </div>
-            </div>
-        </div>
-
-        <div class="bring-widget-container" id="bringWidgetContainer">
-            <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-                ✓ Klicke unten um die Zutaten in Bring zu importieren:
-            </p>
-            <div id="bringWidget" data-bring-import style="display: none;">
-                <a href="https://www.getbring.com">Bring! Einkaufsliste App für iPhone und Android</a>
             </div>
         </div>
     </div>
@@ -263,9 +259,7 @@
             loadingIndicator: document.getElementById('loadingIndicator'),
             ingredientsList: document.getElementById('ingredientsList'),
             ingredientsContainer: document.getElementById('ingredientsContainer'),
-            editBtn: document.getElementById('editBtn'),
             sendBringBtn: document.getElementById('sendBringBtn'),
-            bringWidgetContainer: document.getElementById('bringWidgetContainer'),
             errorMsg: document.getElementById('errorMsg')
         };
 
@@ -279,6 +273,8 @@
                 elements.video.srcObject = videoStream;
                 elements.previewSection.classList.add('active');
                 elements.cameraBtn.style.display = 'none';
+                elements.video.style.display = 'block';
+                elements.canvas.style.display = 'none';
             } catch (err) {
                 showError('Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.');
                 console.error('Kamera-Fehler:', err);
@@ -310,7 +306,6 @@
             elements.canvas.style.display = 'none';
             document.querySelector('.button-group').style.display = 'flex';
             elements.ingredientsList.style.display = 'none';
-            elements.bringWidgetContainer.classList.remove('active');
             recognizedIngredients = [];
             
             videoStream = await navigator.mediaDevices.getUserMedia({
