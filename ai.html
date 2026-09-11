@@ -4,10 +4,224 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RecipeScan KI-Test</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            color: #222;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .description {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .file-input {
+            display: block;
+            width: 100%;
+            margin: 20px 0;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .preview {
+            display: none;
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            margin: 20px 0;
+            border-radius: 10px;
+            background: #000;
+        }
+
+        .button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            min-height: 24px;
+            margin-top: 20px;
+            color: #555;
+            white-space: pre-wrap;
+        }
+
+        .result {
+            display: none;
+            width: 100%;
+            min-height: 240px;
+            margin-top: 20px;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: #f8f8f8;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .error {
+            color: #b00020;
+        }
+
+        .success {
+            color: #146c2e;
+        }
+    </style>
 </head>
 <body>
-    <h1>RecipeScan KI-Version</h1>
-    <p>Die separate KI-Version ist erreichbar.</p>
-    <p>Diese Seite verwendet die bestehende Lösung noch nicht.</p>
+    <main class="container">
+        <h1>RecipeScan KI-Test</h1>
+
+        <p class="description">
+            Wähle ein Rezeptfoto aus. Das Bild wird an den separaten
+            Cloudflare-KI-Worker gesendet.
+        </p>
+
+        <input
+            id="imageInput"
+            class="file-input"
+            type="file"
+            accept="image/*"
+            capture="environment">
+
+        <img id="preview" class="preview" alt="Vorschau des Rezeptfotos">
+
+        <button id="analyzeButton" class="button" disabled>
+            Bild analysieren
+        </button>
+
+        <div id="status" class="status"></div>
+
+        <pre id="result" class="result"></pre>
+    </main>
+
+    <script>
+        const workerUrl =
+            'https://recipe-scan-ai.scanandcook.workers.dev/analyze';
+
+        const elements = {
+            imageInput: document.getElementById('imageInput'),
+            preview: document.getElementById('preview'),
+            analyzeButton: document.getElementById('analyzeButton'),
+            status: document.getElementById('status'),
+            result: document.getElementById('result')
+        };
+
+        let selectedImage = null;
+
+        elements.imageInput.addEventListener('change', event => {
+            const file = event.target.files[0];
+
+            if (!file) {
+                selectedImage = null;
+                elements.analyzeButton.disabled = true;
+                elements.preview.style.display = 'none';
+                return;
+            }
+
+            selectedImage = file;
+            elements.analyzeButton.disabled = false;
+            elements.status.textContent = '';
+            elements.status.className = 'status';
+            elements.result.style.display = 'none';
+            elements.result.textContent = '';
+
+            const imageUrl = URL.createObjectURL(file);
+            elements.preview.src = imageUrl;
+            elements.preview.style.display = 'block';
+        });
+
+        elements.analyzeButton.addEventListener('click', async () => {
+            if (!selectedImage) {
+                return;
+            }
+
+            try {
+                elements.analyzeButton.disabled = true;
+                elements.status.textContent = 'Bild wird analysiert...';
+                elements.status.className = 'status';
+                elements.result.style.display = 'none';
+
+                const response = await fetch(workerUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': selectedImage.type
+                    },
+                    body: selectedImage
+                });
+
+                const responseText = await response.text();
+
+                let responseData;
+
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch {
+                    responseData = {
+                        rawResponse: responseText
+                    };
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        responseData.details ||
+                        responseData.error ||
+                        'Die Bildanalyse ist fehlgeschlagen.'
+                    );
+                }
+
+                elements.status.textContent =
+                    'Analyse erfolgreich abgeschlossen.';
+                elements.status.className = 'status success';
+
+                elements.result.textContent =
+                    JSON.stringify(responseData, null, 2);
+                elements.result.style.display = 'block';
+            } catch (error) {
+                elements.status.textContent = error.message;
+                elements.status.className = 'status error';
+            } finally {
+                elements.analyzeButton.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>
