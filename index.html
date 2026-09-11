@@ -86,7 +86,6 @@
             width: 100%;
             height: auto;
             display: block;
-            transform: scaleX(-1);
         }
 
         canvas {
@@ -317,7 +316,7 @@
         elements.canvas.width = elements.video.videoWidth;
         elements.canvas.height = elements.video.videoHeight;
         
-        // Spiegeln beim Zeichnen: Video ist bereits gespiegelt, daher müssen wir es rückgängig machen
+        // Spiegeln beim Zeichnen
         context.scale(-1, 1);
         context.translate(-elements.canvas.width, 0);
         context.drawImage(elements.video, 0, 0);
