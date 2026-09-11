@@ -337,11 +337,56 @@
         // Text in Zutaten parsen
         function parseIngredients(text) {
             const lines = text.split('\n').filter(line => line.trim().length > 0);
-            recognizedIngredients = lines.map(line => ({
-                original: line.trim(),
-                edited: line.trim()
-            }));
-
+            
+            // Intelligente Filterung: Nur Zutaten extrahieren
+            recognizedIngredients = lines
+                .filter(line => {
+                    const trimmed = line.trim().toLowerCase();
+                    
+                    // Filtere Zeilen, die typischerweise KEINE Zutaten sind
+                    const excludePatterns = [
+                        /^(schritt|step|anleitung|instructions|zubereitung|preparation)/i,
+                        /^(serviert|serves|für|for)\s+\d+/i,
+                        /^(backzeit|kochzeit|cooking time|prep time)/i,
+                        /^(schwierigkeit|difficulty|level)/i,
+                        /^(rezept|recipe)/i,
+                        /^(von|by|author)/i,
+                        /^(kategorie|category)/i,
+                        /^\d+\s*(std|stunde|hour|min|minute|sek|second)/i,
+                        /^(kcal|cal|kalorien|calories)/i,
+                        /^(zubereitungszeit|cooking)/i,
+                        /^(beschreibung|description)/i,
+                        /^(tipps?|tips?|hinweise?|notes?)/i,
+                        /^(variante|variation)/i,
+                        /^(quelle|source)/i,
+                        /^(bewertung|rating)/i,
+                        /^(portionen|portions|servings)/i
+                    ];
+                    
+                    // Prüfe ob Zeile zu kurz ist (Überschriften/Nummern)
+                    if (trimmed.length < 3) return false;
+                    
+                    // Prüfe ob Zeile ein Ausschlussmuster matched
+                    if (excludePatterns.some(pattern => pattern.test(trimmed))) {
+                        return false;
+                    }
+                    
+                    // Prüfe ob es wahrscheinlich eine Zutat ist:
+                    // - Enthält Mengenangaben (g, ml, l, tsp, tbsp, etc.)
+                    // - Oder ist kurz und prägnant (2-10 Wörter)
+                    const hasQuantity = /(\d+\s*(g|kg|ml|l|dl|cl|tsp|tbsp|oz|lb|cup|prise|prise|becher|packung|dose|dose|bund|stück|stk|blatt|scheibe))|^(\d+[\s,.]?\d*\s)|^\d+\s*-\s*\d+/i.test(line);
+                    const wordCount = trimmed.split(/\s+/).length;
+                    
+                    if (hasQuantity) return true;
+                    if (wordCount >= 2 && wordCount <= 10) return true;
+                    
+                    return false;
+                })
+                .map(line => ({
+                    original: line.trim(),
+                    edited: line.trim()
+                }));
+        
             elements.loadingIndicator.classList.remove('active');
             displayIngredients();
             elements.ingredientsList.style.display = 'block';
