@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rezept → Bring</title>
     <script async src="//platform.getbring.com/widgets/import.js"></script>
-
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -18,7 +20,6 @@
             align-items: center;
             padding: 20px;
         }
-
         .container {
             background: white;
             border-radius: 20px;
@@ -28,19 +29,16 @@
             padding: 40px;
             text-align: center;
         }
-
         h1 {
             color: #333;
             margin-bottom: 10px;
             font-size: 28px;
         }
-
         .subtitle {
             color: #666;
             margin-bottom: 30px;
             font-size: 14px;
         }
-
         .camera-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -54,25 +52,20 @@
             margin-bottom: 20px;
             font-weight: 600;
         }
-
         .camera-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
-
         .camera-button:active {
             transform: translateY(0);
         }
-
         .preview-section {
             display: none;
             margin-top: 30px;
         }
-
         .preview-section.active {
             display: block;
         }
-
         .video-container {
             position: relative;
             width: 100%;
@@ -81,23 +74,18 @@
             background: #000;
             margin-bottom: 15px;
         }
-
         video {
             width: 100%;
             height: auto;
             display: block;
-			transform: scaleX(-1);
         }
-
         canvas {
             width: 100%;
             border-radius: 10px;
             margin-bottom: 15px;
             background: #000;
             display: none;
-			transform: scaleX(-1);
         }
-
         .ingredients-list {
             text-align: left;
             background: #f5f5f5;
@@ -107,13 +95,11 @@
             max-height: 300px;
             overflow-y: auto;
         }
-
         .ingredients-list h3 {
             color: #333;
             margin-bottom: 15px;
             font-size: 16px;
         }
-
         .ingredient-item {
             background: white;
             padding: 10px;
@@ -125,7 +111,6 @@
             align-items: center;
             font-size: 14px;
         }
-
         .ingredient-item input {
             flex: 1;
             border: none;
@@ -134,7 +119,6 @@
             font-size: 14px;
             margin-left: 10px;
         }
-
         .ingredient-item button {
             background: #ff6b6b;
             color: white;
@@ -144,13 +128,11 @@
             cursor: pointer;
             font-size: 12px;
         }
-
         .button-group {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
         }
-
         .btn {
             flex: 1;
             padding: 12px;
@@ -161,36 +143,29 @@
             font-weight: 600;
             transition: all 0.2s;
         }
-
         .btn-secondary {
             background: #e0e0e0;
             color: #333;
         }
-
         .btn-secondary:hover {
             background: #d0d0d0;
         }
-
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
-
         .loading {
             display: none;
             text-align: center;
             padding: 20px;
         }
-
         .loading.active {
             display: block;
         }
-
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
@@ -200,12 +175,10 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 10px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         .error {
             background: #ff6b6b;
             color: white;
@@ -214,11 +187,9 @@
             margin-bottom: 15px;
             display: none;
         }
-
         .error.active {
             display: block;
         }
-
         .info-box {
             background: #f0f7ff;
             border-left: 4px solid #667eea;
@@ -230,259 +201,257 @@
         }
     </style>
 </head>
-
 <body>
-<div class="container">
-    <h1>📸 Rezept → Bring</h1>
-    <p class="subtitle">Fotografiere deine Zutaten und importiere sie direkt in Bring!</p>
-
-    <div class="info-box">
-        ℹ️ Fotografiere die Zutatenliste aus deinem Kochbuch. OCR liest die Zutaten aus.
-    </div>
-
-    <div class="error" id="errorMsg"></div>
-
-    <button class="camera-button" id="cameraBtn">📷 Kamera starten</button>
-
-    <div class="preview-section" id="previewSection">
-        <div class="video-container">
-            <video id="video" playsinline autoplay></video>
+    <div class="container">
+        <h1>📸 Rezept → Bring</h1>
+        <p class="subtitle">Fotografiere deine Zutaten und importiere sie direkt in Bring!</p>
+        
+        <div class="info-box">
+            ℹ️ Fotografiere die Zutatenliste aus deinem Kochbuch. OCR liest die Zutaten aus.
         </div>
 
-        <canvas id="canvas"></canvas>
+        <div class="error" id="errorMsg"></div>
 
-        <div class="button-group">
-            <button class="btn btn-secondary" id="retakeBtn">Neues Foto</button>
-            <button class="btn btn-primary" id="captureBtn">📷 Foto machen</button>
-        </div>
+        <button class="camera-button" id="cameraBtn">📷 Kamera starten</button>
 
-        <div class="loading" id="loadingIndicator">
-            <div class="spinner"></div>
-            <p>Analysiere Zutaten...</p>
-        </div>
+        <div class="preview-section" id="previewSection">
+            <div class="video-container">
+                <video id="video" playsinline autoplay></video>
+            </div>
+            
+            <canvas id="canvas"></canvas>
+            
+            <div class="button-group">
+                <button class="btn btn-secondary" id="retakeBtn">Neues Foto</button>
+                <button class="btn btn-primary" id="captureBtn">📷 Foto machen</button>
+            </div>
 
-        <div class="ingredients-list" id="ingredientsList" style="display: none;">
-            <h3>📋 Erkannte Zutaten:</h3>
-            <div id="ingredientsContainer"></div>
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p>Analysiere Zutaten...</p>
+            </div>
 
-            <div class="button-group" style="margin-top: 15px;">
-                <button class="btn btn-secondary" id="editBtn">Bearbeiten</button>
-                <button class="btn btn-primary" id="sendBringBtn">✓ Zu Bring senden</button>
+            <div class="ingredients-list" id="ingredientsList" style="display: none;">
+                <h3>📋 Erkannte Zutaten:</h3>
+                <div id="ingredientsContainer"></div>
+                
+                <div class="button-group" style="margin-top: 15px;">
+                    <button class="btn btn-secondary" id="editBtn">Bearbeiten</button>
+                    <button class="btn btn-primary" id="sendBringBtn">✓ Zu Bring senden</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-</body>
-</html>
 
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+    <script>
+        let videoStream = null;
+        let recognizedIngredients = [];
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
-<script>
-    let videoStream = null;
-    let recognizedIngredients = [];
+        const elements = {
+            cameraBtn: document.getElementById('cameraBtn'),
+            video: document.getElementById('video'),
+            canvas: document.getElementById('canvas'),
+            captureBtn: document.getElementById('captureBtn'),
+            retakeBtn: document.getElementById('retakeBtn'),
+            previewSection: document.getElementById('previewSection'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            ingredientsList: document.getElementById('ingredientsList'),
+            ingredientsContainer: document.getElementById('ingredientsContainer'),
+            sendBringBtn: document.getElementById('sendBringBtn'),
+            errorMsg: document.getElementById('errorMsg')
+        };
 
-    const elements = {
-        cameraBtn: document.getElementById('cameraBtn'),
-        video: document.getElementById('video'),
-        canvas: document.getElementById('canvas'),
-        captureBtn: document.getElementById('captureBtn'),
-        retakeBtn: document.getElementById('retakeBtn'),
-        previewSection: document.getElementById('previewSection'),
-        loadingIndicator: document.getElementById('loadingIndicator'),
-        ingredientsList: document.getElementById('ingredientsList'),
-        ingredientsContainer: document.getElementById('ingredientsContainer'),
-        sendBringBtn: document.getElementById('sendBringBtn'),
-        errorMsg: document.getElementById('errorMsg')
-    };
+        // Kamera starten
+        elements.cameraBtn.addEventListener('click', async () => {
+            try {
+                hideError();
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                elements.video.srcObject = videoStream;
+                elements.previewSection.classList.add('active');
+                elements.cameraBtn.style.display = 'none';
+                elements.video.style.display = 'block';
+                elements.canvas.style.display = 'none';
+            } catch (err) {
+                showError('Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.');
+                console.error('Kamera-Fehler:', err);
+            }
+        });
 
-    // Kamera starten
-    elements.cameraBtn.addEventListener('click', async () => {
-        try {
-            hideError();
+        // Foto machen
+        elements.captureBtn.addEventListener('click', () => {
+            const context = elements.canvas.getContext('2d');
+            elements.canvas.width = elements.video.videoWidth;
+            elements.canvas.height = elements.video.videoHeight;
+            context.drawImage(elements.video, 0, 0);
+            
+            // Video stoppen
+            videoStream.getTracks().forEach(track => track.stop());
+            elements.video.style.display = 'none';
+            elements.canvas.style.display = 'block';
+            
+            document.querySelector('.button-group').style.display = 'none';
+            elements.loadingIndicator.classList.add('active');
+            
+            // OCR starten
+            recognizeText();
+        });
+
+        // Neues Foto
+        elements.retakeBtn.addEventListener('click', async () => {
+            elements.video.style.display = 'block';
+            elements.canvas.style.display = 'none';
+            document.querySelector('.button-group').style.display = 'flex';
+            elements.ingredientsList.style.display = 'none';
+            recognizedIngredients = [];
+            
             videoStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment' }
             });
             elements.video.srcObject = videoStream;
-            elements.previewSection.classList.add('active');
-            elements.cameraBtn.style.display = 'none';
+        });
+
+        // OCR mit Tesseract
+        async function recognizeText() {
+            try {
+                const imageData = elements.canvas.toDataURL('image/png');
+                
+                const result = await Tesseract.recognize(
+                    imageData,
+                    'deu',
+                    { logger: m => console.log(m) }
+                );
+
+                parseIngredients(result.data.text);
+            } catch (err) {
+                showError('OCR-Fehler: Bitte versuche es erneut.');
+                console.error('OCR-Fehler:', err);
+                resetAfterError();
+            }
+        }
+
+        // Text in Zutaten parsen
+        function parseIngredients(text) {
+            const lines = text.split('\n').filter(line => line.trim().length > 0);
+            recognizedIngredients = lines.map(line => ({
+                original: line.trim(),
+                edited: line.trim()
+            }));
+
+            elements.loadingIndicator.classList.remove('active');
+            displayIngredients();
+            elements.ingredientsList.style.display = 'block';
+        }
+
+        // Zutaten anzeigen
+        function displayIngredients() {
+            elements.ingredientsContainer.innerHTML = '';
+            recognizedIngredients.forEach((ingredient, index) => {
+                const div = document.createElement('div');
+                div.className = 'ingredient-item';
+                div.innerHTML = `
+                    <input type="text" value="${ingredient.edited}" data-index="${index}" class="ingredient-input">
+                    <button onclick="removeIngredient(${index})">Löschen</button>
+                `;
+                elements.ingredientsContainer.appendChild(div);
+            });
+
+            // Change-Listener für Bearbeitungen
+            document.querySelectorAll('.ingredient-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    recognizedIngredients[index].edited = e.target.value;
+                });
+            });
+        }
+
+        // Zutat löschen
+        window.removeIngredient = (index) => {
+            recognizedIngredients.splice(index, 1);
+            displayIngredients();
+        };
+
+        // Zu Bring senden
+        elements.sendBringBtn.addEventListener('click', () => {
+            // HTML für Bring generieren (schema.org Format)
+            const ingredientsList = recognizedIngredients
+                .filter(ing => ing.edited.trim().length > 0)
+                .map(ing => `<li itemprop="ingredients">${ing.edited}</li>`)
+                .join('');
+
+            const recipeHTML = `
+                <div itemtype="http://schema.org/Recipe">
+                    <h1 itemprop="name">Mein Rezept</h1>
+                    <ul>
+                        ${ingredientsList}
+                    </ul>
+                </div>
+            `;
+
+            // Blob erstellen und URL generieren
+            const blob = new Blob([recipeHTML], { type: 'text/html' });
+            const dataUrl = URL.createObjectURL(blob);
+
+            // Bring Deep Link via API aufrufen
+            sendToBring(dataUrl);
+        });
+
+        // An Bring API senden
+        async function sendToBring(url) {
+            try {
+                elements.loadingIndicator.classList.add('active');
+                elements.sendBringBtn.disabled = true;
+
+                const response = await fetch('https://api.getbring.com/rest/bringrecipes/deeplink', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: url,
+                        source: 'web',
+                        baseQuantity: 4,
+                        requestedQuantity: 4
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API-Fehler');
+                }
+
+                const data = await response.json();
+                elements.loadingIndicator.classList.remove('active');
+                elements.ingredientsList.style.display = 'none';
+                
+                // Bring Deep Link öffnen
+                window.location.href = data.deeplink;
+
+            } catch (err) {
+                showError('Fehler beim Senden zu Bring. Bitte versuche es erneut.');
+                console.error('Bring-Fehler:', err);
+                elements.loadingIndicator.classList.remove('active');
+                elements.sendBringBtn.disabled = false;
+            }
+        }
+
+        // Fehlerbehandlung
+        function showError(message) {
+            elements.errorMsg.textContent = message;
+            elements.errorMsg.classList.add('active');
+        }
+
+        function hideError() {
+            elements.errorMsg.classList.remove('active');
+        }
+
+        function resetAfterError() {
+            elements.loadingIndicator.classList.remove('active');
+            document.querySelector('.button-group').style.display = 'flex';
             elements.video.style.display = 'block';
             elements.canvas.style.display = 'none';
-        } catch (err) {
-            showError('Kamera konnte nicht zugegriffen werden. Bitte Berechtigung geben.');
-            console.error('Kamera-Fehler:', err);
         }
-    });
-
-    // Foto machen
-    elements.captureBtn.addEventListener('click', () => {
-        const context = elements.canvas.getContext('2d');
-        elements.canvas.width = elements.video.videoWidth;
-        elements.canvas.height = elements.video.videoHeight;
-        context.drawImage(elements.video, 0, 0);
-        
-        // Video stoppen
-        videoStream.getTracks().forEach(track => track.stop());
-        elements.video.style.display = 'none';
-        elements.canvas.style.display = 'block';
-        
-        document.querySelector('.button-group').style.display = 'none';
-        elements.loadingIndicator.classList.add('active');
-        
-        // OCR starten
-        recognizeText();
-    });
-
-    // Neues Foto
-    elements.retakeBtn.addEventListener('click', async () => {
-        elements.video.style.display = 'block';
-        elements.canvas.style.display = 'none';
-        document.querySelector('.button-group').style.display = 'flex';
-        elements.ingredientsList.style.display = 'none';
-        recognizedIngredients = [];
-        
-        videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-        });
-        elements.video.srcObject = videoStream;
-    });
-
-    // OCR mit Tesseract
-    async function recognizeText() {
-        try {
-            const imageData = elements.canvas.toDataURL('image/png');
-            
-            const result = await Tesseract.recognize(
-                imageData,
-                'deu',
-                { logger: m => console.log(m) }
-            );
-
-            parseIngredients(result.data.text);
-        } catch (err) {
-            showError('OCR-Fehler: Bitte versuche es erneut.');
-            console.error('OCR-Fehler:', err);
-            resetAfterError();
-        }
-    }
-
-    // Text in Zutaten parsen
-    function parseIngredients(text) {
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-        recognizedIngredients = lines.map(line => ({
-            original: line.trim(),
-            edited: line.trim()
-        }));
-
-        elements.loadingIndicator.classList.remove('active');
-        displayIngredients();
-        elements.ingredientsList.style.display = 'block';
-    }
-
-    // Zutaten anzeigen
-    function displayIngredients() {
-        elements.ingredientsContainer.innerHTML = '';
-        recognizedIngredients.forEach((ingredient, index) => {
-            const div = document.createElement('div');
-            div.className = 'ingredient-item';
-            div.innerHTML = `
-                <input type="text" value="${ingredient.edited}" data-index="${index}" class="ingredient-input">
-                <button onclick="removeIngredient(${index})">Löschen</button>
-            `;
-            elements.ingredientsContainer.appendChild(div);
-        });
-
-        // Change-Listener für Bearbeitungen
-        document.querySelectorAll('.ingredient-input').forEach(input => {
-            input.addEventListener('change', (e) => {
-                const index = parseInt(e.target.dataset.index);
-                recognizedIngredients[index].edited = e.target.value;
-            });
-        });
-    }
-
-    // Zutat löschen
-    window.removeIngredient = (index) => {
-        recognizedIngredients.splice(index, 1);
-        displayIngredients();
-    };
-
-    // Zu Bring senden
-    elements.sendBringBtn.addEventListener('click', () => {
-        // HTML für Bring generieren (schema.org Format)
-        const ingredientsList = recognizedIngredients
-            .filter(ing => ing.edited.trim().length > 0)
-            .map(ing => `<li itemprop="ingredients">${ing.edited}</li>`)
-            .join('');
-
-        const recipeHTML = `
-            <div itemtype="http://schema.org/Recipe">
-                <h1 itemprop="name">Mein Rezept</h1>
-                <ul>
-                    ${ingredientsList}
-                </ul>
-            </div>
-        `;
-
-        // Blob erstellen und URL generieren
-        const blob = new Blob([recipeHTML], { type: 'text/html' });
-        const dataUrl = URL.createObjectURL(blob);
-
-        // Bring Deep Link via API aufrufen
-        sendToBring(dataUrl);
-    });
-
-    // An Bring API senden
-    async function sendToBring(url) {
-        try {
-            elements.loadingIndicator.classList.add('active');
-            elements.sendBringBtn.disabled = true;
-
-            const response = await fetch('https://api.getbring.com/rest/bringrecipes/deeplink', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: url,
-                    source: 'web',
-                    baseQuantity: 4,
-                    requestedQuantity: 4
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('API-Fehler');
-            }
-
-            const data = await response.json();
-            elements.loadingIndicator.classList.remove('active');
-            elements.ingredientsList.style.display = 'none';
-            
-            // Bring Deep Link öffnen
-            window.location.href = data.deeplink;
-
-        } catch (err) {
-            showError('Fehler beim Senden zu Bring. Bitte versuche es erneut.');
-            console.error('Bring-Fehler:', err);
-            elements.loadingIndicator.classList.remove('active');
-            elements.sendBringBtn.disabled = false;
-        }
-    }
-
-    // Fehlerbehandlung
-    function showError(message) {
-        elements.errorMsg.textContent = message;
-        elements.errorMsg.classList.add('active');
-    }
-
-    function hideError() {
-        elements.errorMsg.classList.remove('active');
-    }
-
-    function resetAfterError() {
-        elements.loadingIndicator.classList.remove('active');
-        document.querySelector('.button-group').style.display = 'flex';
-        elements.video.style.display = 'block';
-        elements.canvas.style.display = 'none';
-    }
-</script>
+    </script>
+</body>
+</html>
